@@ -96,6 +96,12 @@ class OpenAIMiner(Miner):
             default="gpt-3.5-turbo",
             help="OpenAI model to use for completion.",
         )
+        parser.add_argument(
+            "--openai.openai_api_key",
+            type=str,
+            default="gpt-3.5-turbo",
+            help="OpenAI model to use for completion.",
+        )
 
     def config(self) -> "bittensor.Config":
         """
@@ -119,16 +125,16 @@ class OpenAIMiner(Miner):
         self.add_args(parser)
         return bittensor.config(parser)
 
-    def __init__(self, api_key: Optional[str] = None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(OpenAIMiner, self).__init__(*args, **kwargs)
-        if api_key is None:
+        if self.config.openai.openai_api_key is None:
             raise ValueError(
                 "OpenAI API key is None: the miner requires an `OPENAI_API_KEY` defined in the environment variables or as an direct argument into the constructor."
             )
         if self.config.wandb.on:
             self.wandb_run.tags = self.wandb_run.tags + ("openai_miner",)
         #openai.api_key = api_key
-        self.client = OpenAI(api_key=api_key)
+        self.client = OpenAI(api_key=self.config.openai.openai_api_key)
 
     def prompt(self, synapse: Prompting) -> Prompting:
         """
@@ -195,9 +201,9 @@ if __name__ == "__main__":
         When executing the script, the miner runs indefinitely, periodically logging its status.
         To stop the miner, use a keyboard interrupt or ensure proper termination of the script.
     """
-    openai_api_key = os.getenv("OPENAI_API_KEY")
+    #openai_api_key = os.getenv("OPENAI_API_KEY")
 
-    with OpenAIMiner(api_key=openai_api_key):
+    with OpenAIMiner():
         while True:
             print("running...", time.time())
             time.sleep(1)
