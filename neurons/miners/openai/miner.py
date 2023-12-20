@@ -17,7 +17,7 @@
 # DEALINGS IN THE SOFTWARE.
 import os
 import time
-import openai
+from openai import OpenAI
 import argparse
 import bittensor
 from typing import List, Dict, Optional
@@ -27,6 +27,9 @@ from prompting.protocol import Prompting
 
 
 class OpenAIMiner(Miner):
+
+    client = None
+
     @classmethod
     def add_args(cls, parser: argparse.ArgumentParser):
         """
@@ -124,7 +127,8 @@ class OpenAIMiner(Miner):
             )
         if self.config.wandb.on:
             self.wandb_run.tags = self.wandb_run.tags + ("openai_miner",)
-        openai.api_key = api_key
+        #openai.api_key = api_key
+        self.client = OpenAI(api_key=api_key)
 
     def prompt(self, synapse: Prompting) -> Prompting:
         """
@@ -160,7 +164,7 @@ class OpenAIMiner(Miner):
             for role, message in zip(synapse.roles, synapse.messages)
         ]
         bittensor.logging.debug(f"messages: {messages}")
-        resp = openai.ChatCompletion.create(
+        resp = self.client.chat.completions.create(
             model=self.config.openai.model_name,
             messages=messages,
             temperature=self.config.openai.temperature,
@@ -169,8 +173,9 @@ class OpenAIMiner(Miner):
             frequency_penalty=self.config.openai.frequency_penalty,
             presence_penalty=self.config.openai.presence_penalty,
             n=self.config.openai.n,
-        )["choices"][0]["message"]["content"]
-        synapse.completion = resp
+            )
+        message = resp.choices[0].message.content
+        synapse.completion = message
         bittensor.logging.debug(f"completion: {resp}")
         return synapse
 
